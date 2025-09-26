@@ -13,11 +13,13 @@ import { Button } from "@/components/ui/button";
 import {v4 as uuidv4} from 'uuid';
 import axios from "axios";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@clerk/nextjs";
 
 function ResumeUploadDialog({openResumeUpload, setOpenResumeDialog} : any) {
     const [file, setFile] = useState<any>();
     const [loading, setLoading] = useState(false);
     const router = useRouter();
+    const {has} = useAuth();
 
     const onFileChange = (e: any) => {
         const file = e.target.files?.[0];
@@ -35,6 +37,18 @@ function ResumeUploadDialog({openResumeUpload, setOpenResumeDialog} : any) {
         formData.append('recordId', recordId);
         formData.append('resumeFile', file);
         // formData.append('aiAgentType', '/ai-tools/ai-resume-analyzer');
+
+        // @ts-ignore
+        const hasSubscriptionEnabled = await has({plan: 'pro'});
+        if(!hasSubscriptionEnabled) {
+          const resultHistory = await axios.get('/api/history');
+          const historyList = resultHistory.data;
+          const isPresent = await historyList.find((item: any) => item?.aiAgentType == '/ai-tools/ai-resume-analyzer');
+          router.push('/billing');
+          if(isPresent) {
+            return null;
+          }
+        }
 
         // Send formData to backend server
         const result = await axios.post('/api/ai-resume-agent', formData);

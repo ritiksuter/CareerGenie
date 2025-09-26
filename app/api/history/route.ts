@@ -39,11 +39,17 @@ export async function PUT(req: any) {
 export async function GET(req:any) {
     const {searchParams} = new URL(req.url);
     const recordId = searchParams.get('recordId')
+    const user = await currentUser();
 
     try {
         if(recordId) {
             const result = await db.select().from(HistoryTable).where(eq(HistoryTable.recordId, recordId));
             return NextResponse.json(result[0]);
+        }
+        else {
+            // @ts-ignore
+            const result = await db.select().from(HistoryTable).where(eq(HistoryTable.userEmail, user?.primaryEmailAddress?.emailAddress)).orderBy(desc(HistoryTable.id));
+            return NextResponse.json(result);
         }
         return NextResponse.json({});
     }
